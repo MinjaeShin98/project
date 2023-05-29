@@ -1,73 +1,90 @@
 import pandas as pd      # pip install pandas 설치
+import numpy as np
+import seaborn as sns
+import tkinter as tk
+import tkinter.font as tkfont
+
+# 한글 깨짐 방지
+import matplotlib.pyplot as plt
+plt.rcParams['font.family'] = 'Malgun Gothic'
+
+# 엑셀 파일에서 데이터 프레임 생성
+data_file = '건강데이터.xlsx'
+sheet_names = ['10대 남자', '10대 여자', '20대 남자', '20대 여자', '30대 남자', '30대 여자']
+
+# 시트별로 데이터 불러오기
+data_frames = {}  # 시트별 데이터를 저장할 딕셔너리
+
+for sheet_name in sheet_names:
+    df = pd.read_excel(data_file, sheet_name=sheet_name)
+    
+    # '환자수' 열의 데이터 타입 확인 후 문자열로 변환
+    if not pd.api.types.is_string_dtype(df['환자수']):
+        df['환자수'] = df['환자수'].astype(str)
+    
+    df['환자수'] = df['환자수'].str.replace(',', '').astype(int)
+    data_frames[sheet_name] = df
+
+# 시각화
+for sheet_name in sheet_names:
+    df = data_frames[sheet_name]
+    
+    if '10대' in sheet_name:
+        # 10대는 가로 막대 그래프 사용
+        plt.figure(figsize=(13, 8))
+        sns.barplot(x='환자수', y='질병명', data=df)
+        plt.title(sheet_name)
+        plt.show()
+    elif '20대' in sheet_name:
+        # 20대는 원 그래프 사용
+        plt.figure(figsize=(13, 8))
+        plt.pie(df['환자수'], labels=df['질병명'], autopct='%1.1f%%', startangle=90, wedgeprops={'edgecolor': 'white'})
+        plt.title(sheet_name)
+        plt.show()
+    elif '30대' in sheet_name:
+        # 30대는 도넛 그래프 사용
+        plt.figure(figsize=(13, 8))
+        plt.pie(df['환자수'], labels=df['질병명'], autopct='%1.1f%%', startangle=90, wedgeprops={'width': 0.3, 'edgecolor': 'white'})
+        plt.title(sheet_name)
+        plt.show()
+
+'''사용자'''
 
 def find_disease(gender, age):
-    # 파일에서 성별과 연령에 따른 질병을 찾아 반환하는 함수
-    df = pd.read_excel('예시파일.xlsx')
+    # 파일에서 성별과 연령에 따른 질병과 질병 코드를 찾아 반환하는 함수
+    df = pd.read_excel('연령별질병.xlsx')
     filtered_df = df[(df['성별'] == gender) & (df['연령'] == age)]
     if not filtered_df.empty:
         diseases = filtered_df['질병'].tolist()
-        return diseases
+        disease_codes = filtered_df['질병코드'].tolist()
+        return diseases, disease_codes
     else:
-        return None
+        return None, None
 
-def find_prevention(disease):
-    # 파일에서 질병에 대한 예방법을 찾아 반환하는 함수
-    df = pd.read_excel('예시파일.elsx')
-    prevention = df[df['질병'] == disease]['예방법'].iloc[0]
-    return prevention
-
-def save_data(gender, age, disease, prevention):
-    # 성별, 연령, 질병, 예방법을 파일에 저장하는 함수
-    with open('output.txt', 'a') as file:
+def save_data(gender, age, diseases, disease_codes):
+    # 성별, 연령, 질병, 질병 코드를 파일에 저장하는 함수
+    with open('검색기록.txt', 'a', encoding='utf-8') as file:
         file.write(f"성별: {gender}\n")
         file.write(f"연령: {age}\n")
-        file.write(f"질병: {disease}\n")
-        file.write(f"예방법: {prevention}\n")
+        file.write("질병 및 질병 코드:\n")
+        for disease, code in zip(diseases, disease_codes):
+            file.write(f"- {disease} ({code})\n")
         file.write("---------------\n")
 
 # 사용자로부터 성별과 연령 입력받음
 gender = input("성별을 입력하세요 (남성 또는 여성): ")
-age = int(input("연령을 입력하세요: "))
+age = input("연령대를 입력하세요 (10대, 20대, 30대): ")
 
 # 질병 검색
-diseases = find_disease(gender, age)
+diseases, disease_codes = find_disease(gender, age)
 
 # 질병 출력
 if diseases:
-    print("해당 성별과 연령에 해당하는 질병:")
-    for disease in diseases:
-        print(disease)
+    print("\n해당 성별과 연령에 해당하는 질병 및 질병 코드:\n")
+    for disease, code in zip(diseases, disease_codes):
+        print(f"{disease} ({code})")
 else:
     print("해당 성별과 연령에 해당하는 질병이 없습니다.")
 
-# 질병 입력받음
-disease = input("질병을 입력하세요: ")
-
-# 예방법 검색
-prevention = find_prevention(disease)
-
-# 예방법 출력
-if prevention:
-    print("해당 질병에 대한 예방법: ", prevention)
-else:
-    print("해당 질병에 대한 예방법이 없습니다.")
-
-# output.txt 파일에 데이터 저장
-save_data(gender, age, disease, prevention)
-
-import matplotlib.pyplot as plt # pip install matplotlib 설치
-
-
-# 사망원인과 그에 따른 비율 데이터
-causes = ['암', '심장질환', '폐렴', '뇌혈관질환', '자살']
-percentages = [158.2, 60.4, 45.1, 42, 26.9]
-
-# 원 그래프 그리기
-plt.pie(percentages, labels=causes, autopct='%1.1f%%')
-
-# 그래프 제목 설정
-plt.title('대한민국 사망원인 TOP5')
-
-# 그래프 출력
-plt.show()
-
+# 검색기록.txt 파일에 데이터 저장
+save_data(gender, age, diseases, disease_codes)

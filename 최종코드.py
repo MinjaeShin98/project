@@ -103,7 +103,7 @@ chrome_options = Options()
 chrome_options.add_experimental_option("detach", True)
 
 #질병코드 검색으로 크롤링
-search = input('알아보고 싶은 질병코드를 입력하세요. :')
+search = input('\n알아보고 싶은 질병코드를 입력하세요. :')
 
 #불필요한 에러 메시지 없애기
 chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
